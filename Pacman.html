@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HP-48 Pacman Pro Mobile</title>
+    <style>
+        :root {
+            --lcd-bg: #9fcc7c;
+            --lcd-fg: #0c1308;
+            --case-color: #23272a;
+            --btn-color: #34393d;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #2b2f33 0%, #0a0c0e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 5px;
+        }
+
+        .calc-body {
+            background-color: var(--case-color);
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border: 2px solid #555;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+
+        .brand-container {
+            background: #111;
+            padding: 4px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            text-align: center;
+            border: 1px solid #666;
+        }
+
+        .brand {
+            color: #ccc;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .lcd-screen {
+            background: linear-gradient(180deg, #b7d0a5, #8fa384);
+            border: 5px solid #111;
+            border-radius: 10px;
+            padding: 4px;
+            position: relative;
+            box-shadow:
+                inset 0 0 20px rgba(255,255,255,.25),
+                inset 0 0 30px rgba(0,0,0,.3),
+                0 6px 15px rgba(0,0,0,0.6);
+        }
+
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--lcd-fg);
+            border-bottom: 1px solid var(--lcd-fg);
+            margin-bottom: 4px;
+            padding-bottom: 2px;
+            gap: 2px;
+        }
+
+        .screen-header span {
+            white-space: nowrap;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: auto;
+            max-height: 45vh;
+            object-fit: contain;
+            image-rendering: pixelated;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .score-panel {
+            background-color: rgba(0, 0, 0, 0.05);
+            border-top: 1px solid var(--lcd-fg);
+            margin-top: 4px;
+            padding: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .score-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--lcd-fg);
+        }
+
+        .score-display {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--lcd-fg);
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.2);
+        }
+
+        .controls-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0 5px 0;
+            margin-top: 8px;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 8px;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .key {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(145deg, #575d63, #222);
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow:
+                0 10px 25px rgba(0,0,0,.6),
+                inset 0 2px 3px rgba(255,255,255,.2);
+            transition: .15s;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .key:hover {
+            transform: scale(1.05);
+            filter: brightness(1.15);
+        }
+
+        .key:active {
+            transform: scale(.90);
+            box-shadow: 0 3px 8px rgba(0,0,0,.8);
+        }
+
+        .key::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(255,255,255,.15);
+            pointer-events: none;
+        }
+
+        .key-up { grid-column: 2; grid-row: 1; }
+        .key-left { grid-column: 1; grid-row: 2; }
+        .key-down { grid-column: 2; grid-row: 2; }
+        .key-right { grid-column: 3; grid-row: 2; }
+
+        .start-container {
+            width: 100%;
+            padding: 0 10px;
+        }
+
+        .btn-start {
+            width: 100%;
+            height: 60px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(180deg, #ff4444, #a10000);
+            box-shadow: 0 8px 20px rgba(0,0,0,.5);
+            transition: .15s;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,.5);
+        }
+
+        .btn-start:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn-start:active {
+            transform: translateY(4px) scale(.98);
+            box-shadow: 0 3px 8px rgba(0,0,0,.7);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--lcd-bg);
+            border: 2px solid var(--lcd-fg);
+            padding: 10px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+            font-weight: bold;
+            width: 80%;
+            font-size: 14px;
+        }
+
+        .flash {
+            animation: levelFlash .5s 4;
+        }
+
+        @keyframes levelFlash {
+            50% { filter: brightness(1.5); }
+        }
+
+        @media (max-height: 750px) {
+            .key { width: 68px; height: 68px; font-size: 26px; border-radius: 16px; }
+            .key::after { border-radius: 16px; }
+            #gameCanvas { max-height: 40vh; }
+            .brand { font-size: 11px; }
+            .btn-start { height: 52px; font-size: 16px; }
+        }
+
+        @media (max-height: 620px) {
+            .key { width: 56px; height: 56px; font-size: 20px; border-radius: 14px; }
+            .key::after { border-radius: 14px; }
+            #gameCanvas { max-height: 34vh; }
+            .btn-start { height: 46px; font-size: 14px; }
+        }
+
+        @media (max-height: 520px) {
+            .key { width: 48px; height: 48px; font-size: 16px; border-radius: 12px; }
+            .key::after { border-radius: 12px; }
+            #gameCanvas { max-height: 30vh; }
+            .btn-start { height: 40px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calc-body">
+        <div class="brand-container">
+            <div class="brand">Dr. Ronald Rodriguez Espinoza</div>
+        </div>
+
+        <div class="lcd-screen">
+            <div class="screen-header">
+                <span id="levelLabel">NIVEL: 1</span>
+                <span id="livesLabel">VIDAS: 3</span>
+                <span id="statusLabel">LISTO</span>
+                <span id="hiVal">HI: 0000</span>
+            </div>
+
+            <canvas id="gameCanvas" width="200" height="220"></canvas>
+
+            <div class="score-panel">
+                <span class="score-label">PUNTOS:</span>
+                <span id="bigScoreVal" class="score-display">0000</span>
+            </div>
+
+            <div id="gameMsg" class="overlay">
+                <div id="msgText">PRESIONA START</div>
+            </div>
+        </div>
+
+        <div class="controls-area">
+            <div class="keypad">
+                <button class="key key-up" id="upBtn" aria-label="Arriba">▲</button>
+                <button class="key key-left" id="leftBtn" aria-label="Izquierda">◀</button>
+                <button class="key key-down" id="downBtn" aria-label="Abajo">▼</button>
+                <button class="key key-right" id="rightBtn" aria-label="Derecha">▶</button>
+            </div>
+
+            <div class="start-container">
+                <button class="btn-start" id="startBtn">ON / START</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MOTOR DE AUDIO RETRO ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch(e) { console.log('Audio no disponible'); }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTone(freq, dur, type = 'square') {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + dur);
+            } catch(e) {}
+        }
+
+        const sound = {
+            dot: () => { playTone(1200, 0.03, 'square'); },
+            start: () => {
+                [440, 660, 880, 1320].forEach(
+                    (f, i) => setTimeout(() => playTone(f, 0.08, 'square'), i * 90)
+                );
+            },
+            die: () => {
+                [500, 400, 300, 200, 100].forEach(
+                    (f, i) => setTimeout(() => playTone(f, 0.12, 'triangle'), i * 100)
+                );
+            },
+            level: () => {
+                [800, 1000, 1200, 1500, 1800].forEach(
+                    (f, i) => setTimeout(() => playTone(f, 0.08, 'square'), i * 60)
+                );
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const bigScoreVal = document.getElementById('bigScoreVal');
+        const hiVal = document.getElementById('hiVal');
+        const levelLabel = document.getElementById('levelLabel');
+        const livesLabel = document.getElementById('livesLabel');
+        const gameMsg = document.getElementById('gameMsg');
+        const msgText = document.getElementById('msgText');
+        const statusLabel = document.getElementById('statusLabel');
+
+        const TILE_SIZE = 10;
+        const COLS = 20;
+        const ROWS = 22;
+
+        let level = 1;
+        let score = 0;
+        let lives = 3;
+        let bonus = null;
+        let paused = false;
+        let highscore = parseInt(localStorage.getItem('hp48_pac_hi')) || 0;
+        let gameActive = false;
+        let ghostSpeed = 220;
+        let gameLoopTimer = null;
+
+        // ===== MAPA CON LOS TRES CAMBIOS APLICADOS =====
+        // - Fila 6: casa de fantasmas con accesos laterales
+        // - Fila 7: casa conectada al pasillo principal
+        // - Fila 12: puerta de salida central
+        // - Filas 9 y 11: túneles laterales
+        const originalMap = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
+            [1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,0,2,2,2,2,0,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [1,1,0,1,1,0,1,1,1,0,0,1,1,1,0,1,1,0,1,1],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [1,0,1,1,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,0,1,1,1,0,1,0,0,1,0,1,1,1,0,1,1,1],
+            [1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,0,0,0,0,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let maze = [];
+        let pacman = { x: 1, y: 1, dir: {x:0, y:0}, nextDir: {x:0, y:0} };
+        let ghosts = [];
+
+        function spawnBonus(){
+            let x, y, tries = 0;
+            do {
+                x = Math.floor(Math.random() * COLS);
+                y = Math.floor(Math.random() * ROWS);
+                tries++;
+            } while (maze[y][x] === 1 && tries < 100);
+            if (maze[y][x] !== 1) bonus = { x, y };
+        }
+
+        function init() {
+            hiVal.innerText = `HI: ${String(highscore).padStart(4, '0')}`;
+            maze = JSON.parse(JSON.stringify(originalMap));
+            draw();
+            gameMsg.style.display = 'block';
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let x = c * TILE_SIZE, y = r * TILE_SIZE;
+                    if (maze[r][c] === 1) {
+                        ctx.fillStyle = '#0c1308';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.strokeStyle = '#9fcc7c';
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                    } else if (maze[r][c] === 0) {
+                        ctx.fillStyle = '#0c1308';
+                        ctx.beginPath();
+                        ctx.arc(x + 5, y + 5, 1.5, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            if (bonus) {
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(bonus.x * TILE_SIZE + 5, bonus.y * TILE_SIZE + 5, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#0c1308";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            drawPacman();
+            drawGhosts();
+        }
+
+        function drawPacman() {
+            let px = pacman.x * TILE_SIZE + 5, py = pacman.y * TILE_SIZE + 5;
+            ctx.fillStyle = '#0c1308';
+            ctx.beginPath();
+            let rot = 0;
+            if (pacman.dir.x === 1) rot = 0;
+            if (pacman.dir.x === -1) rot = Math.PI;
+            if (pacman.dir.y === 1) rot = Math.PI/2;
+            if (pacman.dir.y === -1) rot = -Math.PI/2;
+            let open = Math.sin(Date.now() / 80) * 0.6 + 0.6;
+            ctx.moveTo(px, py);
+            ctx.arc(px, py, 4.5, rot + 0.2*open, rot + (2*Math.PI) - 0.2*open);
+            ctx.fill();
+        }
+
+        function drawGhosts() {
+            ghosts.forEach(g => {
+                let gx = g.x * TILE_SIZE, gy = g.y * TILE_SIZE;
+                ctx.fillStyle = '#0c1308';
+                ctx.beginPath();
+                ctx.arc(gx + 5, gy + 5, 4.5, Math.PI, 0);
+                ctx.lineTo(gx + 9, gy + 9);
+                ctx.lineTo(gx + 1, gy + 9);
+                ctx.fill();
+                ctx.fillStyle = '#9fcc7c';
+                ctx.fillRect(gx + 2, gy + 3, 2, 2);
+                ctx.fillRect(gx + 6, gy + 3, 2, 2);
+            });
+        }
+
+        function update() {
+            if (!gameActive || paused) return;
+
+            if (canMove(pacman.x + pacman.nextDir.x, pacman.y + pacman.nextDir.y)) {
+                pacman.dir = {...pacman.nextDir};
+            }
+            if (canMove(pacman.x + pacman.dir.x, pacman.y + pacman.dir.y)) {
+                pacman.x += pacman.dir.x;
+                pacman.y += pacman.dir.y;
+
+                // ===== TELETRANSPORTE LATERAL PACMAN =====
+                if (pacman.x < 0) pacman.x = COLS - 1;
+                if (pacman.x >= COLS) pacman.x = 0;
+
+                if (maze[pacman.y][pacman.x] === 0) {
+                    maze[pacman.y][pacman.x] = 2;
+                    score += 10 * level;
+                    sound.dot();
+                    checkLevelComplete();
+                }
+
+                if (bonus && pacman.x === bonus.x && pacman.y === bonus.y) {
+                    score += 200;
+                    bonus = null;
+                    playTone(1200, 0.1, 'sine');
+                }
+            }
+
+            ghosts.forEach(g => {
+                let dirs = [{x:1, y:0}, {x:-1, y:0}, {x:0, y:1}, {x:0, y:-1}];
+                if (!canMove(g.x + g.dir.x, g.y + g.dir.y) || Math.random() < 0.25) {
+                    let v = dirs.filter(d => canMove(g.x + d.x, g.y + d.y));
+                    if (v.length > 0) g.dir = v[Math.floor(Math.random()*v.length)];
+                }
+                g.x += g.dir.x;
+                g.y += g.dir.y;
+
+                // ===== TELETRANSPORTE LATERAL FANTASMAS =====
+                if (g.x < 0) g.x = COLS - 1;
+                if (g.x >= COLS) g.x = 0;
+
+                if (g.x === pacman.x && g.y === pacman.y) die();
+            });
+
+            bigScoreVal.innerText = String(score).padStart(4, '0');
+            if (score > highscore) {
+                highscore = score;
+                hiVal.innerText = `HI: ${String(highscore).padStart(4, '0')}`;
+                localStorage.setItem('hp48_pac_hi', highscore);
+            }
+            draw();
+
+            if (gameLoopTimer) clearTimeout(gameLoopTimer);
+            gameLoopTimer = setTimeout(update, ghostSpeed);
+        }
+
+        function canMove(x, y) {
+            if (y < 0 || y >= ROWS) {
+                return false;
+            }
+            if (x < 0 || x >= COLS) {
+                return true;
+            }
+            return maze[y][x] !== 1;
+        }
+
+        function checkLevelComplete() {
+            let dots = 0;
+            maze.forEach(row => row.forEach(t => { if(t===0) dots++; }));
+            if (dots === 0) {
+                gameActive = false;
+                level++;
+                ghostSpeed = Math.max(60, 220 - (level * 15));
+                levelLabel.innerText = `NIVEL: ${level}`;
+                sound.level();
+
+                document.querySelector(".lcd-screen").classList.add("flash");
+                setTimeout(() => {
+                    document.querySelector(".lcd-screen").classList.remove("flash");
+                }, 2000);
+
+                msgText.innerText = `¡NIVEL ${level}!`;
+                gameMsg.style.display = 'block';
+                setTimeout(startLevel, 2000);
+            }
+        }
+
+        function die() {
+            lives--;
+            livesLabel.innerText = `VIDAS: ${lives}`;
+            sound.die();
+
+            if (lives <= 0) {
+                gameActive = false;
+                msgText.innerText = "GAME OVER";
+                gameMsg.style.display = "block";
+                statusLabel.innerText = "FIN";
+                if (gameLoopTimer) clearTimeout(gameLoopTimer);
+                return;
+            }
+
+            pacman.x = 1;
+            pacman.y = 1;
+            pacman.dir = { x: 0, y: 0 };
+            pacman.nextDir = { x: 0, y: 0 };
+
+            ghosts.forEach((g, i) => {
+                g.x = 9 + (i % 3);
+                g.y = 7;
+                g.dir = { x: Math.random() > 0.5 ? 1 : -1, y: 0 };
+            });
+
+            draw();
+        }
+
+        function startLevel() {
+            maze = JSON.parse(JSON.stringify(originalMap));
+            pacman = { x: 1, y: 1, dir: {x:0, y:0}, nextDir: {x:0, y:0} };
+            paused = false;
+
+            ghosts = [];
+            let ghostCount = Math.min(2 + level, 6);
+            for (let i = 0; i < ghostCount; i++) {
+                ghosts.push({
+                    x: 9 + (i % 3),
+                    y: 7,
+                    dir: { x: Math.random() > 0.5 ? 1 : -1, y: 0 }
+                });
+            }
+
+            spawnBonus();
+
+            gameMsg.style.display = 'none';
+            gameActive = true;
+            statusLabel.innerText = "JUGANDO";
+            update();
+        }
+
+        function startGame() {
+            initAudio();
+            lives = 3;
+            livesLabel.innerText = "VIDAS: 3";
+
+            level = 1;
+            score = 0;
+            ghostSpeed = 220;
+            bonus = null;
+            levelLabel.innerText = "NIVEL: 1";
+            bigScoreVal.innerText = "0000";
+            sound.start();
+
+            msgText.innerText = "USA LOS TÚNELES LATERALES";
+            gameMsg.style.display = 'block';
+            statusLabel.innerText = "TÚNELES";
+
+            setTimeout(() => {
+                startLevel();
+            }, 1200);
+        }
+
+        function setDir(x, y) {
+            initAudio();
+            pacman.nextDir = { x, y };
+        }
+
+        function bindButton(id, x, y) {
+            const btn = document.getElementById(id);
+            const handler = (e) => {
+                e.preventDefault();
+                setDir(x, y);
+            };
+            btn.addEventListener('click', handler);
+            btn.addEventListener('touchstart', handler, { passive: false });
+        }
+
+        bindButton('upBtn', 0, -1);
+        bindButton('downBtn', 0, 1);
+        bindButton('leftBtn', -1, 0);
+        bindButton('rightBtn', 1, 0);
+
+        const startBtn = document.getElementById('startBtn');
+        startBtn.addEventListener('click', (e) => { e.preventDefault(); startGame(); });
+        startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
+
+        window.addEventListener('keydown', e => {
+            if (e.key.includes('Arrow')) e.preventDefault();
+            if (e.key === 'ArrowUp') setDir(0, -1);
+            if (e.key === 'ArrowDown') setDir(0, 1);
+            if (e.key === 'ArrowLeft') setDir(-1, 0);
+            if (e.key === 'ArrowRight') setDir(1, 0);
+
+            if (e.key === "p" || e.key === "P") {
+                if (!gameActive) return;
+                paused = !paused;
+                statusLabel.innerText = paused ? "PAUSA" : "JUGANDO";
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
